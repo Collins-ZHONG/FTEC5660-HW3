@@ -57,7 +57,13 @@ def load_env_file(path: Path = Path(".env")) -> None:
 
 # Choose any 3 of the 15 points, e.g. CHOSEN_POINTS = [1, 7, 15]. Your agent
 # gives a PASS or FAIL verdict on these 3 points only, with your own rule for each.
-CHOSEN_POINTS: list[int] = []  ### YOUR CODE HERE
+CHOSEN_POINTS: list[int] = [5,7,14]  ### YOUR CODE HERE
+"""
+5: "Does the company have a worthwhile profit margin?"              
+    > market 60% quantile or find out the margin
+7: "Does the company have outstanding labor and personnel relations?"
+14: "Does the management talk freely to investors about its affairs when things are going well but 'clam up' when troubles and disappointments occur?"
+"""
 
 
 def build_agent() -> Any:
@@ -69,10 +75,25 @@ def build_agent() -> Any:
 
     Use the DeepSeek model named by ``MODEL_NAME``. The API key is loaded
     from .env. Each company has its own tools (see ``analyze_companies``), so
-    you will probably create one tool-calling agent per company there.
+    you will probably create one tool-calling agent per company there.      # meaning defining tool in this or analyzecompanies function?
     """
     ### YOUR CODE HERE
-    return None
+    import os
+    from langchain_deepseek import ChatDeepSeek
+
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
+    if not api_key or api_key == "your_key_here":
+            raise RuntimeError(
+                "DEEPSEEK_API_KEY is not configured. Set it in the local .env file."
+            )
+
+    system_prompt = """
+    
+
+    """.strip()
+
+    model = ChatDeepSeek(model=MODEL_NAME, api_key=api_key)
+    return [model, system_prompt]
 
 
 async def analyze_companies(agent: Any, companies: dict[str, list[Any]]) -> dict[str, dict[str, Any]]:
