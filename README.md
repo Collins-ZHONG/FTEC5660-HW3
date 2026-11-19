@@ -271,6 +271,9 @@ any matching call text to DeepSeek V4 Flash. The model interprets the
 qualitative evidence and returns schema-validated assessments for points 7
 and 14 plus a short summary. The program combines those assessments with the
 calculated point 5 verdict and catches errors separately for each company.
+Thinking mode is disabled because it is incompatible with the `tool_choice`
+required by the model's structured function-calling output; disabling it lets
+the agent return assessments in the required schema.
 
 ### Results
 
