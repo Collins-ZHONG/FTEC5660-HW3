@@ -171,13 +171,118 @@ companies with the same tools and the same answer key rules, but different
 names and wording, and scores your 3 points only.
 
 ## Homework 3 solution:
-> to students: this is your report, see the homework description.
 
 ### My 3 points and rules
-> for each point: why you chose it, your PASS rule in one or two sentences, and the evidence it uses. Quote Fisher where it helps.
+
+I selected Fisher's points 5, 7, and 14. Profitability is one of the most
+important signs of whether a business is being run successfully, which makes
+point 5 a useful starting point. Points 7 and 14 examine two complementary
+parts of a company's internal health: employee relations and management's
+willingness to discuss problems. Both can inform an assessment of the
+company's ability to develop over the long term. I also wanted to learn more
+than how to issue database queries. Points 7 and 14 require an AI model to
+interpret qualitative evidence and compare management's statements with
+quantitative evidence, while point 5 provides a clear calculation to check.
+
+#### Point 5: Worthwhile Profit Margin
+
+I chose this point because profitability is a basic indicator of whether a
+company can operate successfully. Comparing its margin with its industry
+peers gives the result useful context.
+
+**PASS rule:** Calculate FY2025 operating margin as `(revenue - cost of sales -
+selling and administrative expenses - R&D expenses) / revenue`. PASS if the
+result is greater than or equal to the company's industry median; otherwise
+FAIL.
+
+**Evidence:** Use `sql_query` on `orders` and `monthly_costs` for the FY2025
+amounts and `company`/`industry_medians` for the company's industry benchmark.
+Python performs the arithmetic.
+
+#### Point 7: Labor and Personnel Relations
+
+I chose this point because employees' experiences can reveal workplace
+conditions and morale that financial statements do not show. These conditions
+may affect a company's ability to retain and develop people over time.
+
+**PASS rule:** Ask a current employee about `working_conditions`; if that
+person cannot comment, ask a former employee. PASS only when the response
+clearly supports outstanding relations, such as fair treatment, retention,
+and responsive problem-solving. FAIL when it describes serious problems or is
+inconclusive. A single interview is qualitative evidence and is not treated as
+a representative employee survey.
+
+**Evidence:** Use the `interview` tool with `current_employee` and
+`working_conditions`, with `former_employee` as a fallback when needed. The
+model classifies the supplied answer as POSITIVE, NEGATIVE, or UNCLEAR.
+
+#### Point 14: Management Discusses Trouble Freely
+
+I chose this point because it combines management candor with operational
+evidence. It tests whether management addresses problems that can be
+independently identified in company data.
+
+**PASS rule:** Evaluate only quarters with a matching earnings call. A
+negative quarterly operating cash flow is a material difficulty. A positive
+operating cash-flow margin is material only when it is at least 2 percentage
+points below its own mean across the five preceding quarters in two
+consecutive quarters with calls. A return rate is material when it exceeds
+its mean over the five preceding quarters by more than 2 population standard
+deviations and is at
+least one percentage point above that mean. PASS if management clearly
+acknowledges and addresses each detected difficulty, or if none is detected;
+FAIL if management omits, evades, or materially contradicts a detected
+difficulty. The
+five-quarter histories are baselines only and are not themselves disclosure
+events.
+
+**Evidence:** Use `sql_query` on `quarterly_cash`, `orders`, and `returns` to
+calculate the financial and return-rate measures. Use `list_documents` to
+identify earnings-call quarters and `read_document` to inspect the matching
+call for each detected difficulty. The model assesses the management response
+against the calculated evidence.
 
 ### Design
-> a visualization of your agent design and one paragraph describing it.
+
+```mermaid
+flowchart TD
+    A[Company-specific tools] --> B[SQL: FY2025 revenue, costs, industry margin]
+    B --> C[Python: calculate Q5 margin and compare]
+    A --> D[Interview current employee about working conditions]
+    D --> E[Ask former employee only if current employee cannot comment]
+    A --> F[List earnings-call documents]
+    F --> G[SQL: quarterly cash flow, revenue, and return rates]
+    G --> H[Apply Q14 thresholds to quarters with matching calls]
+    H --> I[Read calls only for detected trouble quarters]
+    C --> J[Evidence package]
+    E --> J
+    I --> J
+    J --> K[DeepSeek V4 Flash with Pydantic structured output]
+    K --> L[Normalize Q7 and Q14 verdicts; combine with Q5]
+    L --> M[Per-company result and evidence summary]
+```
+
+For each company, the program first gathers evidence through that company's
+tools. SQL and Python handle the numerical work for point 5 and the Q14
+screen, so the language model does not need to estimate ratios or thresholds.
+The program reads only the earnings calls that match quarters flagged by the
+Q14 screen. It then sends the calculated results, the relevant interview, and
+any matching call text to DeepSeek V4 Flash. The model interprets the
+qualitative evidence and returns schema-validated assessments for points 7
+and 14 plus a short summary. The program combines those assessments with the
+calculated point 5 verdict and catches errors separately for each company.
 
 ### Results
-> your point score on `public_test`, the companies where your verdicts disagree with the public answers, and why.
+
+The `results.csv` generated in the current workspace records **60 correct
+verdicts out of 60** on the 20-company `public_test`, for a **100.0% balanced
+score**.
+
+Each selected point matched all 20 public labels: 14 PASS and 6 FAIL verdicts
+per point. There are no companies or selected points with disagreements in
+this result file, so there are no specific public-test errors to explain.
+
+This score describes the result file, not every attempted run. A run in which
+the API rejects the structured-output request does not contain model
+assessments for points 7 and 14; its fallback verdicts should not be treated
+as evaluated answers or used to calculate the reported score.
