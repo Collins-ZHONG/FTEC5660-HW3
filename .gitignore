@@ -1,4 +1,6 @@
 .env
+.agents/
+1155272720_task2.docx
 .venv/
 __pycache__/
 results.csv

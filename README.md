@@ -242,6 +242,37 @@ identify earnings-call quarters and `read_document` to inspect the matching
 call for each detected difficulty. The model assesses the management response
 against the calculated evidence.
 
+#### Q14 Rule Refinement and Public-Test Results
+
+The Q14 rule was refined through several public-test iterations. Under the
+initial rule, the first run produced only **21/60 correct verdicts (29.8%
+balanced accuracy)**. The main problem was that the screen was too sensitive to
+isolated statistical abnormalities. It could treat a single positive cash-flow
+decline as a major operating difficulty, and it did not cleanly separate the
+five-quarter baseline from the quarters for which management actually had an
+earnings call. As a result, some companies were marked as disclosure failures
+even when the call had already explained a return-rate problem.
+
+I then tightened the rule in two ways. First, only quarters with a matching
+earnings call became Q14 disclosure tests; earlier quarters were retained only
+to calculate the five-quarter baseline. Second, a positive operating-cash-flow
+decline had to occur in two consecutive call-covered quarters before it counted
+as a material difficulty. Negative operating cash flow still triggered an
+immediate review, while return-rate deterioration required both a two-standard-
+deviation outlier and at least a one-percentage-point increase over the
+historical mean. This improved the public-test result to **45/60 correct
+verdicts (77.4% balanced accuracy)** and reduced false positives caused by
+ordinary or isolated fluctuations.
+
+The remaining model calls initially failed because DeepSeek's thinking mode did
+not support the `tool_choice` parameter required by LangChain's structured
+function-calling output. The API returned a 400 error before the model could
+produce the Q7 and Q14 structured assessments, so those attempts used the
+program's per-company fallback values and could not improve the score. I
+disabled thinking mode in the `ChatDeepSeek` request while keeping structured
+function calling and schema validation. After that compatibility fix, the
+public-test result reached **60/60 correct verdicts (100.0% balanced accuracy)**.
+
 ### Design
 
 ```mermaid
@@ -271,9 +302,6 @@ any matching call text to DeepSeek V4 Flash. The model interprets the
 qualitative evidence and returns schema-validated assessments for points 7
 and 14 plus a short summary. The program combines those assessments with the
 calculated point 5 verdict and catches errors separately for each company.
-Thinking mode is disabled because it is incompatible with the `tool_choice`
-required by the model's structured function-calling output; disabling it lets
-the agent return assessments in the required schema.
 
 ### Results
 
